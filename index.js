@@ -5,7 +5,7 @@ async function scrapeDuckDuckGoLinks(searchQuery, maxPages = 1) {
   let links = [];
 
   for (let page = 0; page < maxPages; page++) {
-    const searchUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}&s=${page * 50}`;
+    const searchUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}&s=${page * 3}`;
 
     try {
       const response = await axios.get(searchUrl, {
@@ -40,7 +40,7 @@ async function scrapeDuckDuckGoLinks(searchQuery, maxPages = 1) {
 }
 
 // Example usage
-scrapeDuckDuckGoLinks('Node.js web scraping', 100) // Adjust the second parameter to change the number of pages to scrape
+scrapeDuckDuckGoLinks('iphone 13', 100) // Adjust the second parameter to change the number of pages to scrape
   .then((links) => {
     console.log(`DuckDuckGo search result links (${links.length}):`, links);
   })
