@@ -1,11 +1,11 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-async function scrapeDuckDuckGoLinks(searchQuery, maxPages = 1) {
+async function scrapeDuckDuckGoLinks(searchQuery, maxPages = 1, maxLinks = Infinity) {
   let links = [];
 
   for (let page = 0; page < maxPages; page++) {
-    const searchUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}&s=${page * 3}`;
+    const searchUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}&s=${page * 1}`;
 
     try {
       const response = await axios.get(searchUrl, {
@@ -18,13 +18,13 @@ async function scrapeDuckDuckGoLinks(searchQuery, maxPages = 1) {
 
       $('div.result').each((_, element) => {
         const link = $(element).find('a.result__url').attr('href');
-        if (link) {
+        if (link && links.length < maxLinks) {
           links.push(link);
         }
       });
 
-      // Break the loop if there are no more results
-      if ($('div.result').length === 0) {
+      // Break the loop if there are no more results or if the maximum number of links is reached
+      if ($('div.result').length === 0 || links.length >= maxLinks) {
         break;
       }
 
@@ -40,7 +40,7 @@ async function scrapeDuckDuckGoLinks(searchQuery, maxPages = 1) {
 }
 
 // Example usage
-scrapeDuckDuckGoLinks('iphone 13', 100) // Adjust the second parameter to change the number of pages to scrape
+scrapeDuckDuckGoLinks('iphone 13', 4, 20) // Adjust the second parameter to change the number of pages to scrape, and the third parameter to limit the number of links
   .then((links) => {
     console.log(`DuckDuckGo search result links (${links.length}):`, links);
   })
