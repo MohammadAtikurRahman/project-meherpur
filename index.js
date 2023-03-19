@@ -1,49 +1,49 @@
-const puppeteer = require('puppeteer');
+const axios = require('axios');
+const cheerio = require('cheerio');
 
-async function searchGoogle(term) {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  await page.goto(`https://www.google.com/search?q=${term}&num=100`);
+async function scrapeDuckDuckGoLinks(searchQuery, maxPages = 1) {
+  let links = [];
 
-  // Scroll down to load more results
-  await page.evaluate(async () => {
-    await new Promise(resolve => {
-      let totalHeight = 0;
-      const distance = 100;
-      const timer = setInterval(() => {
-        const scrollHeight = document.body.scrollHeight;
-        window.scrollBy(0, distance);
-        totalHeight += distance;
+  for (let page = 0; page < maxPages; page++) {
+    const searchUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}&s=${page * 50}`;
 
-        if (totalHeight >= scrollHeight) {
-          clearInterval(timer);
-          resolve();
+    try {
+      const response = await axios.get(searchUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36'
         }
-      }, 200);
-    });
-  });
+      });
 
-  // Wait for a short delay to ensure all results have loaded
-  await page.waitForTimeout(1000);
+      const $ = cheerio.load(response.data);
 
-  const results = await page.evaluate(() => {
-    const titles = Array.from(document.querySelectorAll('h3'));
-    const urls = Array.from(document.querySelectorAll('a'));
-    return titles.map((title, index) => {
-      return {
-        title: title.textContent,
-        url: urls[index].href
-      };
-    });
-  });
+      $('div.result').each((_, element) => {
+        const link = $(element).find('a.result__url').attr('href');
+        if (link) {
+          links.push(link);
+        }
+      });
 
-  await browser.close();
+      // Break the loop if there are no more results
+      if ($('div.result').length === 0) {
+        break;
+      }
 
- 
+      // Wait between requests to avoid overwhelming the server
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } catch (error) {
+      console.error('Error:', error.message);
+      return links;
+    }
+  }
 
-
-  return results;
+  return links;
 }
-searchGoogle('iphone 13')
-  .then(results => console.log(results))
-  .catch(error => console.error(error));
+
+// Example usage
+scrapeDuckDuckGoLinks('Node.js web scraping', 100) // Adjust the second parameter to change the number of pages to scrape
+  .then((links) => {
+    console.log(`DuckDuckGo search result links (${links.length}):`, links);
+  })
+  .catch((error) => {
+    console.error('Error:', error.message);
+  });
